@@ -1,0 +1,50 @@
+`//@version=5
+strategy("", overlay = true, currency = currency.EUR,
+     initial_capital = 1000, commission_type = strategy.commission.percent, commission_value = 0.03, 
+     default_qty_value = 100, default_qty_type = strategy.percent_of_equity)
+
+
+len     = input(title = 'PERIOD', defval = 10, group = "SETTING INDICATOR")
+smaHigh = ta.sma(high, len)
+smaLow  = ta.sma(low,  len)
+Hlv     = int(na)
+Hlv := close > smaHigh ? 1 : close < smaLow ? -1 : Hlv[1]
+sslDown = Hlv < 0 ? smaHigh : smaLow
+sslUp   = Hlv < 0 ? smaLow : smaHigh
+
+plot(sslDown, linewidth = 2, color = color.new(color.red, 0))
+plot(sslUp,   linewidth = 2, color = color.new(color.lime, 0))
+
+LongEntry = ta.crossover (sslUp,  sslDown) and barstate.isconfirmed
+LongExit  = ta.crossunder(sslUp,  sslDown) and barstate.isconfirmed
+
+isLong    = LongEntry //and inDateRange
+
+if (isLong and barstate.isconfirmed)
+    strategy.entry(id = "BUY",  direction  = strategy.long, qty = 100)
+
+var int bar     = 0
+var int count   = 0
+
+if LongEntry
+    bar := bar_index
+    bar
+count := bar_index - bar + 1
+
+isExit = if LongExit 
+    close 
+
+StopLoss = input.float(defval = 0.10, title = "STOP LOSS VALUE", minval = 0.00)
+distance = (sslDown * StopLoss) / 100
+Value    = (sslDown - distance)
+
+SL      = ta.valuewhen(LongEntry, Value, 0)
+
+plot(SL, color = color.white)
+
+Close = if ta.crossunder(close, SL)
+    close
+
+strategy.exit("CLOSE LONG", from_entry = "BUY", stop = Close)
+    //strategy.close_all(when = SL)
+    //strategy.close_all(when = isExitStopLoss, comment = "CLOSE TRADE STOP LOSS")`
